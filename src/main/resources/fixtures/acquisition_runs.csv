@@ -1,0 +1,5 @@
+run_id,curve_id,instrument_run_order,start_time,end_time,sampling_interval_seconds,note
+FIX1-R1,FIX1,1,0,60,1,升温段断点前
+FIX1-R2,FIX1,2,70,90,2,升温段断点后
+FIX1-R3,FIX1,3,90,110,5,恒温段
+FIX1-R4,FIX1,4,110,150,4,冷却段

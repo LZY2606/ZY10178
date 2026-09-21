@@ -1,0 +1,4 @@
+curve_id,segment_order,segment_kind,start_time,end_time,start_temperature,end_temperature
+FIX1,1,HEATING,0,90,0,90
+FIX1,2,ISOTHERMAL,90,110,90,90
+FIX1,3,COOLING,110,150,90,30

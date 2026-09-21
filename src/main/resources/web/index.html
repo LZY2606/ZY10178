@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>热谱裁线台</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header>
+  <div>
+    <h1>热谱裁线台</h1>
+    <p>按炉温程序切段；原始曲线只读，缺测区间不补线，方案保存后不可改写。</p>
+  </div>
+  <div class="actions">
+    <button id="resetDb">清空并重新导入</button>
+    <button id="exportJson">导出运行记录</button>
+  </div>
+</header>
+<main>
+  <section class="panel controls">
+    <h2>裁线参数</h2>
+    <label>曲线<select id="curveSelect"></select></label>
+    <label>转变名称<input id="transitionName" value="主转变"></label>
+    <div class="anchor-grid">
+      <label>起点锨点<select id="startAnchor"></select></label>
+      <label>终点锨点<select id="endAnchor"></select></label>
+    </div>
+    <div class="option-grid">
+      <label>基线<select id="baselineType"><option value="LINEAR">直线</option><option value="SEGMENTED">分段</option></select></label>
+      <label>吸热口径<select id="endothermSign"><option value="NEGATIVE">热流向下为吸热</option><option value="POSITIVE">热流向上为吸热</option></select></label>
+    </div>
+    <p class="hint">在曲线上单击选择起点，再次单击选择终点；同刻重复样本可用下拉框按仪器序号切换。</p>
+    <button id="saveScheme" class="primary">新增方案（不改写旧方案）</button>
+    <div id="message" class="message"></div>
+    <div id="metrics" class="metrics"></div>
+  </section>
+  <section class="panel chart-panel">
+    <h2>曲线、基线与交点</h2>
+    <svg id="chart" viewBox="0 0 980 520" role="img"></svg>
+    <div class="legend">
+      <span><i class="heat"></i>DSC 热流（左轴 mW）</span>
+      <span><i class="mass"></i>TGA 质量（右轴 mg）</span>
+      <span><i class="base"></i>当前基线</span>
+      <span><i class="gap"></i>采集缺测</span>
+      <span><i class="cross"></i>全部交点</span>
+    </div>
+  </section>
+  <section class="panel summary">
+    <h2>曲线摘要</h2>
+    <div id="summary"></div>
+  </section>
+  <section class="panel schemes">
+    <h2>已保存方案</h2>
+    <div id="schemeList" class="scheme-list"></div>
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

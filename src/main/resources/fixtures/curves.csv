@@ -1,0 +1,2 @@
+curve_id,name,instrument,operator_note
+FIX1,升温恒温冷却联合曲线,DSC/TGA Demo,含60至70秒采集断点；原始曲线不做跨缺测补线
