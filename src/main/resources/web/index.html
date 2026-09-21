@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>热谱裁线台</title>
+<style>
+  :root { --bg:#f4f6f8; --panel:#fff; --ink:#1d2b36; --muted:#5c6b77; --line:#d8e0e6;
+          --accent:#0b6e99; --accent2:#c4531a; --good:#1b7f4b; --warn:#b58105; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+         background:var(--bg); color:var(--ink); }
+  header { background:#10324a; color:#fff; padding:14px 22px; }
+  header h1 { margin:0; font-size:20px; letter-spacing:2px; }
+  header .sub { font-size:12px; opacity:.75; margin-top:4px; }
+  .wrap { display:grid; grid-template-columns: 300px 1fr 320px; gap:14px; padding:14px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; }
+  .panel h2 { font-size:14px; margin:0 0 10px; color:var(--accent); border-bottom:1px solid var(--line); padding-bottom:6px; }
+  label { display:block; font-size:12px; color:var(--muted); margin:8px 0 3px; }
+  input,select,textarea,button { font:inherit; }
+  input[type=number],input[type=text],select,textarea { width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:5px; }
+  button { background:var(--accent); color:#fff; border:0; border-radius:5px; padding:8px 12px; cursor:pointer; margin:4px 4px 4px 0; }
+  button.ghost { background:#eef3f6; color:var(--accent); border:1px solid var(--line); }
+  button.danger { background:#a8332a; }
+  canvas { width:100%; border:1px solid var(--line); border-radius:6px; background:#fcfdfe; }
+  .kv { display:grid; grid-template-columns: 108px 1fr; gap:3px 8px; font-size:12px; margin-top:6px; }
+  .kv .k { color:var(--muted); }
+  .kv .v { font-variant-numeric: tabular-nums; }
+  .tag { display:inline-block; font-size:11px; padding:1px 7px; border-radius:10px; background:#e7f0f5; color:var(--accent); margin-right:4px; }
+  .tag.warn { background:#fdf3e1; color:var(--warn); }
+  .tag.bad { background:#fbeae8; color:#a8332a; }
+  .tag.good { background:#e8f6ee; color:var(--good); }
+  .cross { font-size:11px; padding:2px 0; border-bottom:1px dashed #eee; }
+  .muted { color:var(--muted); font-size:11px; }
+  .warnbox { background:#fdf8ec; border:1px solid #f0dfae; border-radius:6px; padding:8px; font-size:12px; margin-top:8px; }
+  .plan { border:1px solid var(--line); border-radius:6px; padding:8px; margin-bottom:8px; font-size:12px; cursor:pointer; }
+  .plan:hover { border-color:var(--accent); }
+  .rule { background:#f0f5f8; border-left:3px solid var(--accent); padding:8px; font-size:11px; color:#35515f; border-radius:4px; margin:8px 0; }
+  .segbtns button { padding:4px 8px; font-size:11px; }
+  .segbtns button.on { background:var(--accent2); }
+</style>
+</head>
+<body>
+<header>
+  <h1>热谱裁线台</h1>
+  <div class="sub">DSC/TGA 基线定义 · 转变热积分 · 质量台阶复核 ｜ 原始曲线只读保留，方案只追加不改写</div>
+</header>
+
+<div class="wrap">
+  <div class="panel">
+    <h2>① 炉温程序与锨点</h2>
+    <div class="segbtns" id="segBtns"></div>
+    <div id="curveMeta" class="muted" style="margin:6px 0"></div>
+
+    <label>左锨点时间 (s)</label>
+    <input type="number" id="leftTime" step="0.5" value="44" />
+    <label>右锨点时间 (s)</label>
+    <input type="number" id="rightTime" step="0.5" value="78" />
+
+    <label>基线类型</label>
+    <select id="baselineType">
+      <option value="STRAIGHT">直线基线（两锨点连线）</option>
+      <option value="PIECEWISE">分段基线（两侧最小二乘，中点打结）</option>
+    </select>
+
+    <label>吸热正负号口径</label>
+    <select id="signConvention">
+      <option value="ENDO_UP">吸热向上（热流正=吸热）</option>
+      <option value="ENDO_DOWN">吸热向下（取负后显示）</option>
+    </select>
+
+    <h2 style="margin-top:14px">② 质量台阶窗口</h2>
+    <label>台阶前时间 (s)</label>
+    <input type="number" id="massFrom" step="0.5" value="88" />
+    <label>台阶后时间 (s)</label>
+    <input type="number" id="massTo" step="0.5" value="124" />
+
+    <h2 style="margin-top:14px">③ 方案留存</h2>
+    <label>转变标签（可保留两个合理边界）</label>
+    <input type="text" id="label" value="边界A" />
+    <label>备注</label>
+    <textarea id="note" rows="2"></textarea>
+    <div style="margin-top:8px">
+      <button onclick="doAnalyze(false)">预览分析</button>
+      <button class="ghost" onclick="doAnalyze(false).then(()=>savePlan())">保存方案</button>
+    </div>
+    <div class="muted" style="margin-top:6px">每次保存都是新记录；改基线/口径/锨点不会覆盖旧方案。</div>
+  </div>
+
+  <div class="panel">
+    <h2>热谱（上：热流 ｜ 下：质量；灰带=采集断点，橙点=同时刻重复样本）</h2>
+    <canvas id="chart" width="900" height="520"></canvas>
+    <div class="rule" id="ruleBox">交点规则将在分析后显示。</div>
+    <div class="muted">点击热流图：第一次点设左锨点，第二次点设右锨点，然后自动重新分析。</div>
+  </div>
+
+  <div class="panel">
+    <h2>转变结果</h2>
+    <div id="ope" class="kv"></div>
+    <h2 style="margin-top:12px">积分值（时间 / 温度口径区分）</h2>
+    <div id="ints" class="kv"></div>
+    <h2 style="margin-top:12px">质量损失区间</h2>
+    <div id="mass" class="kv"></div>
+    <div id="warnings"></div>
+
+    <h2 style="margin-top:12px">全部交点（不以第一个偷换）</h2>
+    <div id="crossings"></div>
+  </div>
+</div>
+
+<div class="wrap" style="grid-template-columns: 1fr 1fr;">
+  <div class="panel">
+    <h2>已保存方案（对同一转变的多边界）</h2>
+    <div id="plans"></div>
+  </div>
+  <div class="panel">
+    <h2>运行记录 / 数据管理</h2>
+    <div style="margin-bottom:8px">
+      <button class="ghost" onclick="loadRuns()">刷新运行记录</button>
+      <a href="/api/export"><button class="ghost">导出运行记录与数据</button></a>
+      <button class="danger" onclick="resetDb()">清空数据库</button>
+      <button class="ghost" onclick="loadFixture()">清空并重导 fixture</button>
+    </div>
+    <div id="runs" style="max-height:260px;overflow:auto"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
